@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>seattle bird buddies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #07100a;
+    --surface:    #0c1610;
+    --surface-2:  #111d14;
+    --border:     #1a261c;
+    --border-2:   #243028;
+    --amber:      #c07c14;
+    --amber-hi:   #d8921e;
+    --amber-glow: rgba(192, 124, 20, 0.12);
+    --text:       #d4ccba;
+    --text-dim:   #657060;
+    --text-muted: #384038;
+    --green:      #3d8c52;
+    --green-glow: rgba(61, 140, 82, 0.15);
+    --blue:       #3d6e8a;
+    --red:        #8a3d3d;
+    --red-glow:   rgba(138, 61, 61, 0.15);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(20, 40, 24, 0.6) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(12, 24, 14, 0.4) 0%, transparent 60%);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 300;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ───────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    min-height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ───────────────────────────────── */
+  .header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .site-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 3px var(--green-glow);
+    flex-shrink: 0;
+    animation: breathe 2.5s ease-in-out infinite;
+  }
+
+  .live-dot.offline {
+    background: var(--red);
+    box-shadow: 0 0 0 3px var(--red-glow);
+    animation: none;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 3px var(--green-glow); }
+    50%       { opacity: 0.5; box-shadow: 0 0 0 6px transparent; }
+  }
+
+  #liveLabel { color: var(--text); }
+
+  .viewer-count {
+    color: var(--text-dim);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Left column ──────────────────────────── */
+  .camera-col {
+    display: flex;
+    flex-direction: column;
+    padding: 24px 28px;
+    gap: 14px;
+    border-right: 1px solid var(--border);
+  }
+
+  .snapshot-wrapper {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    flex: 1;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .snapshot-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .snapshot-offline {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 48px;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    position: absolute;
+    inset: 0;
+  }
+
+  .snapshot-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .pills {
+    display: flex;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+  }
+
+  .pill-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .pill.night { color: var(--blue); border-color: rgba(61, 110, 138, 0.3); }
+  .pill.day   { color: var(--amber); border-color: rgba(192, 124, 20, 0.3); }
+
+  .last-updated {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Right column ─────────────────────────── */
+  .controls-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+  }
+
+  .card {
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .card-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  /* ── Reboot card ──────────────────────────── */
+  .reboot-card {
+    background: linear-gradient(160deg, transparent 40%, var(--amber-glow) 100%);
+  }
+
+  .reboot-header {
+    margin-bottom: 6px;
+  }
+
+  .reboot-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .reboot-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.03em;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .reboot-btn {
+    width: 100%;
+    padding: 13px 16px;
+    background: var(--amber);
+    color: #0a0600;
+    border: none;
+    border-radius: 2px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reboot-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.06), transparent);
+    pointer-events: none;
+  }
+
+  .reboot-btn:hover  { background: var(--amber-hi); box-shadow: 0 4px 20px rgba(192,124,20,0.25); }
+  .reboot-btn:active { transform: scale(0.99); }
+  .reboot-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Countdown */
+  .countdown-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+  }
+
+  .ring-outer {
+    position: relative;
+    width: 76px;
+    height: 76px;
+  }
+
+  .ring-outer svg { transform: rotate(-90deg); }
+
+  .ring-bg       { stroke: var(--border-2); fill: none; stroke-width: 2.5; }
+  .ring-progress {
+    stroke: var(--amber);
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 197.9; /* 2π × 31.5 */
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+  }
+
+  .ring-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--amber);
+  }
+
+  .countdown-text {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .reboot-success {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--green-glow);
+    border: 1px solid rgba(61, 140, 82, 0.25);
+    border-radius: 2px;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 0.06em;
+  }
+
+  .reboot-timeout {
+    display: none;
+    padding: 10px 14px;
+    background: var(--red-glow);
+    border: 1px solid rgba(138, 61, 61, 0.25);
+    border-radius: 2px;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 0.03em;
+    line-height: 1.6;
+  }
+
+  /* ── Stat rows ────────────────────────────── */
+  .stat-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-row:first-of-type { padding-top: 0; }
+  .stat-row:last-of-type  { border-bottom: none; padding-bottom: 0; }
+
+  .stat-key {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .stat-val {
+    font-size: 12px;
+    color: var(--text);
+    text-align: right;
+  }
+
+  .stat-val.amber { color: var(--amber); }
+
+  /* SD bar */
+  .sd-track {
+    margin-top: 8px;
+    height: 2px;
+    background: var(--border-2);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .sd-fill {
+    height: 100%;
+    background: var(--amber);
+    border-radius: 1px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  /* ── Log feed ─────────────────────────────── */
+  .log-feed {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .log-entry {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: baseline;
+  }
+
+  .log-entry:last-child  { border-bottom: none; padding-bottom: 0; }
+  .log-entry:first-child { padding-top: 0; }
+
+  .log-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .log-evt {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+
+  .log-entry.ntp        .log-evt { color: var(--text-muted); }
+  .log-entry.ir         .log-evt { color: var(--blue); }
+  .log-entry.connect    .log-evt { color: var(--green); }
+  .log-entry.disconnect .log-evt { color: var(--red); }
+  .log-entry.other      .log-evt { color: var(--text-dim); }
+
+  /* ── Modal ────────────────────────────────── */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 5, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-bg.open { display: flex; }
+
+  .modal {
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 3px;
+    padding: 30px;
+    max-width: 360px;
+    width: calc(100% - 48px);
+    animation: pop-in 0.18s ease;
+  }
+
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    font-weight: 400;
+    margin-bottom: 10px;
+  }
+
+  .modal-body {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+    margin-bottom: 26px;
+  }
+
+  .modal-actions { display: flex; gap: 10px; }
+
+  .btn-ghost {
+    flex: 1;
+    padding: 11px;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .btn-reboot {
+    flex: 1;
+    padding: 11px;
+    background: var(--amber);
+    border: none;
+    border-radius: 2px;
+    color: #0a0600;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-reboot:hover { background: var(--amber-hi); }
+
+  /* ── Responsive ───────────────────────────── */
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+    .header { grid-column: 1; }
+    .camera-col { border-right: none; border-bottom: 1px solid var(--border); padding: 16px; }
+    .controls-col { overflow-y: unset; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Header -->
+  <header class="header">
+    <span class="site-title">seattle bird buddies</span>
+    <div class="live-badge">
+      <span class="live-dot offline" id="liveDot"></span>
+      <span id="liveLabel">—</span>
+      <span class="viewer-count" id="viewerCount"></span>
+    </div>
+  </header>
+
+  <!-- Left: live feed -->
+  <main class="camera-col">
+
+    <div class="snapshot-wrapper" id="snapshotWrapper">
+      <img class="snapshot-img" id="snapshot" alt="Live camera feed">
+      <div class="snapshot-offline" id="snapshotOffline">
+        <!-- sparrow silhouette -->
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M38 8C38 8 44 6 46 10C50 8 54 12 52 18C54 20 54 26 50 28C48 36 42 40 34 40C28 40 22 38 18 32C12 30 8 26 10 20C12 14 18 14 22 16C22 12 26 8 30 8C32 8 36 10 38 8Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="44" cy="14" r="1.5" fill="currentColor"/>
+          <path d="M52 18L58 14L54 22" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M30 40L28 48L34 44L32 52" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M36 40L36 50L40 46" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Camera offline
+      </div>
+    </div>
+
+    <div class="snapshot-footer">
+      <div class="pills">
+        <span class="pill">2560 × 1920</span>
+        <span class="pill" id="irPill"><span class="pill-dot"></span><span id="irLabel">—</span></span>
+      </div>
+      <span class="last-updated" id="lastUpdated">—</span>
+    </div>
+
+  </main>
+
+  <!-- Right: controls -->
+  <aside class="controls-col">
+
+    <!-- Reboot -->
+    <div class="card reboot-card">
+      <div class="reboot-header">
+        <div class="reboot-title">Reboot Camera</div>
+        <div class="reboot-sub">Restarts the camera. The stream will be offline for approximately 30 seconds.</div>
+      </div>
+
+      <button class="reboot-btn" id="rebootBtn" onclick="openModal()">
+        Reboot Camera
+      </button>
+
+      <div class="countdown-wrap" id="countdownWrap">
+        <div class="ring-outer">
+          <svg width="76" height="76" viewBox="0 0 76 76">
+            <circle class="ring-bg"       cx="38" cy="38" r="31.5"/>
+            <circle class="ring-progress" cx="38" cy="38" r="31.5" id="ringArc"/>
+          </svg>
+          <div class="ring-number" id="ringNum">30</div>
+        </div>
+        <div class="countdown-text" id="countdownText">Rebooting…</div>
+      </div>
+
+      <div class="reboot-success" id="rebootSuccess">
+        ● Camera is back online
+      </div>
+      <div class="reboot-timeout" id="rebootTimeout">
+        Camera may still be starting up — check the feed above.
+      </div>
+    </div>
+
+    <!-- Stream -->
+    <div class="card">
+      <div class="card-label">Stream</div>
+      <div class="stat-row">
+        <span class="stat-key">Uptime</span>
+        <span class="stat-val" id="streamUptime">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Destination</span>
+        <span class="stat-val" id="streamDest">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Viewers</span>
+        <span class="stat-val amber" id="streamViewers">—</span>
+      </div>
+    </div>
+
+    <!-- System -->
+    <div class="card">
+      <div class="card-label">System</div>
+      <div class="stat-row">
+        <span class="stat-key">SD Card</span>
+        <span class="stat-val" id="sdLabel">—</span>
+      </div>
+      <div class="sd-track"><div class="sd-fill" id="sdFill"></div></div>
+      <div class="stat-row" style="margin-top: 8px;">
+        <span class="stat-key">Firmware</span>
+        <span class="stat-val" id="firmware">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-key">Last boot</span>
+        <span class="stat-val" id="bootTime">—</span>
+      </div>
+    </div>
+
+    <!-- Events -->
+    <div class="card">
+      <div class="card-label">Recent Events</div>
+      <div class="log-feed" id="logFeed"></div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <div class="modal-title">Reboot camera?</div>
+    <div class="modal-body">
+      The live stream will go offline for approximately 30 seconds
+      while the camera restarts.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost"   onclick="closeModal()">Cancel</button>
+      <button class="btn-reboot"  onclick="confirmReboot()">Reboot</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────
+const CIRCUMFERENCE = 2 * Math.PI * 31.5; // matches r="31.5" in SVG
+
+// ── State ──────────────────────────────────────────────────────
+let snapshotLastLoaded = null;
+let isRebooting = false;
+
+// ── Snapshot ───────────────────────────────────────────────────
+function refreshSnapshot() {
+  if (isRebooting) return;
+  const probe = new Image();
+  probe.onload = () => {
+    const img = document.getElementById('snapshot');
+    img.src = probe.src;
+    img.style.display = 'block';
+    document.getElementById('snapshotOffline').style.display = 'none';
+    snapshotLastLoaded = Date.now();
+  };
+  probe.onerror = () => {
+    document.getElementById('snapshot').style.display = 'none';
+    document.getElementById('snapshotOffline').style.display = 'flex';
+  };
+  probe.src = '/api/snapshot?t=' + Date.now();
+}
+
+function tickLastUpdated() {
+  const el = document.getElementById('lastUpdated');
+  if (!snapshotLastLoaded) { el.textContent = '—'; return; }
+  const s = Math.round((Date.now() - snapshotLastLoaded) / 1000);
+  el.textContent = s < 3 ? 'just now' : `updated ${s}s ago`;
+}
+
+// ── Status ─────────────────────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const data = await fetch('/api/status').then(r => r.json());
+
+    const dot   = document.getElementById('liveDot');
+    const label = document.getElementById('liveLabel');
+    const views = document.getElementById('viewerCount');
+
+    if (data.streaming) {
+      dot.className = 'live-dot';
+      label.textContent = 'Live';
+      views.textContent = data.viewer_count + ' watching';
+    } else {
+      dot.className = 'live-dot offline';
+      label.textContent = 'Offline';
+      views.textContent = '';
+    }
+
+    document.getElementById('streamUptime').textContent =
+      data.uptime_seconds != null ? fmtUptime(data.uptime_seconds) : '—';
+
+    const url = data.url || '';
+    document.getElementById('streamDest').textContent =
+      url.includes('youtube') ? 'YouTube Live' :
+      url.includes('twitch')  ? 'Twitch' :
+      url ? 'RTMP' : '—';
+
+    document.getElementById('streamViewers').textContent =
+      data.viewer_count != null ? data.viewer_count : '—';
+
+  } catch(e) { /* silent — camera may be offline */ }
+}
+
+async function fetchInfo() {
+  try {
+    const data = await fetch('/api/info').then(r => r.json());
+    document.getElementById('firmware').textContent  = data.firmware  || '—';
+    document.getElementById('bootTime').textContent  = data.startdate || '—';
+
+    if (data.sd_total_mb > 0) {
+      const used = data.sd_total_mb - data.sd_free_mb;
+      const pct  = (used / data.sd_total_mb * 100).toFixed(0);
+      document.getElementById('sdLabel').textContent =
+        data.sd_free_mb + ' MB free / ' + data.sd_total_mb + ' MB';
+      document.getElementById('sdFill').style.width = pct + '%';
+    }
+  } catch(e) { /* silent */ }
+}
+
+async function fetchSyslog() {
+  try {
+    const data = await fetch('/api/syslog').then(r => r.json());
+    const lines = data.lines || [];
+
+    // Derive IR mode from most recent ircut entry
+    const irEntry = [...lines].reverse().find(l => l.event.includes('ircut'));
+    const pill = document.getElementById('irPill');
+    const lbl  = document.getElementById('irLabel');
+    if (irEntry && irEntry.event.includes('blackwhite')) {
+      pill.className = 'pill night'; lbl.textContent = 'Night mode';
+    } else {
+      pill.className = 'pill day';   lbl.textContent = 'Day mode';
+    }
+
+    // Render log (last 6, newest first)
+    const recent = lines.slice(-6).reverse();
+    document.getElementById('logFeed').innerHTML = recent.map(l => {
+      const cls = logClass(l.event);
+      return `<div class="log-entry ${cls}">
+        <span class="log-time">${l.time.slice(11, 16)}</span>
+        <span class="log-evt">${esc(friendlyLog(l.event))}</span>
+      </div>`;
+    }).join('');
+
+  } catch(e) { /* silent */ }
+}
+
+function logClass(evt) {
+  if (evt.includes('ntp') || evt.includes('update time')) return 'ntp';
+  if (evt.includes('ircut'))   return 'ir';
+  if (evt.includes('login'))   return 'connect';
+  if (evt.includes('logout'))  return 'disconnect';
+  return 'other';
+}
+
+function friendlyLog(evt) {
+  if (evt.includes('update time'))                        return 'NTP time sync';
+  if (evt.includes('ircut') && evt.includes('blackwhite')) return 'IR cut → night mode';
+  if (evt.includes('ircut') && evt.includes('color'))     return 'IR cut → day mode';
+  if (evt.includes('login for rtsp'))                     return 'RTSP stream connected';
+  if (evt.includes('logout from rtsp'))                   return 'RTSP stream disconnected';
+  if (evt.includes('login for http'))                     return 'HTTP viewer connected';
+  if (evt.includes('ipc_server start'))                   return 'Camera server started';
+  return evt;
+}
+
+// ── Modal ──────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('open');
+}
+document.getElementById('modalBg').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalBg')) closeModal();
+});
+
+// ── Reboot ─────────────────────────────────────────────────────
+async function confirmReboot() {
+  closeModal();
+  isRebooting = true;
+
+  const btn       = document.getElementById('rebootBtn');
+  const countdown = document.getElementById('countdownWrap');
+  const success   = document.getElementById('rebootSuccess');
+  const timeout   = document.getElementById('rebootTimeout');
+  const arc       = document.getElementById('ringArc');
+  const num       = document.getElementById('ringNum');
+  const txt       = document.getElementById('countdownText');
+
+  btn.style.display     = 'none';
+  success.style.display = 'none';
+  timeout.style.display = 'none';
+  countdown.style.display = 'flex';
+
+  arc.style.strokeDasharray  = CIRCUMFERENCE;
+  arc.style.strokeDashoffset = '0';
+
+  // Fire reboot (camera may drop the connection mid-request — that's fine)
+  try { await fetch('/api/reboot', { method: 'POST' }); } catch(e) {}
+
+  let remaining = 30;
+  num.textContent = remaining;
+
+  const tick = setInterval(() => {
+    remaining--;
+    num.textContent = remaining;
+    txt.textContent = 'Rebooting… returning in ' + remaining + 's';
+    arc.style.strokeDashoffset = CIRCUMFERENCE * (remaining / 30);
+    if (remaining <= 0) {
+      clearInterval(tick);
+      txt.textContent = 'Waiting for camera…';
+      pollForCamera(0);
+    }
+  }, 1000);
+}
+
+function pollForCamera(attempt) {
+  const countdown = document.getElementById('countdownWrap');
+  const success   = document.getElementById('rebootSuccess');
+  const timeout   = document.getElementById('rebootTimeout');
+  const btn       = document.getElementById('rebootBtn');
+  const txt       = document.getElementById('countdownText');
+
+  if (attempt > 15) {
+    countdown.style.display = 'none';
+    timeout.style.display   = 'block';
+    btn.style.display       = 'block';
+    isRebooting = false;
+    return;
+  }
+
+  const probe = new Image();
+  probe.onload = () => {
+    isRebooting = false;
+    countdown.style.display = 'none';
+    success.style.display   = 'flex';
+    btn.style.display       = 'block';
+    refreshSnapshot();
+    fetchStatus();
+    fetchSyslog();
+    setTimeout(() => { success.style.display = 'none'; }, 5000);
+  };
+  probe.onerror = () => {
+    txt.textContent = 'Waiting for camera… (' + (attempt + 1) + ')';
+    setTimeout(() => pollForCamera(attempt + 1), 2000);
+  };
+  probe.src = '/api/snapshot?t=' + Date.now();
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmtUptime(s) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Boot ───────────────────────────────────────────────────────
+refreshSnapshot();
+fetchStatus();
+fetchInfo();
+fetchSyslog();
+
+setInterval(refreshSnapshot,                5_000);
+setInterval(tickLastUpdated,                1_000);
+setInterval(() => { fetchStatus(); fetchSyslog(); }, 15_000);
+setInterval(fetchInfo,                     60_000);
+</script>
+</body>
+</html>
