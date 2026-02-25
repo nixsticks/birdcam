@@ -6,12 +6,12 @@
 birdcam/
 ├── server.py           # Flask app and camera proxy
 ├── requirements.txt    # Python dependencies (Flask + python-dotenv)
-├── .env                # Your credentials and config — never committed
-├── .env.example        # Template showing required variables — committed
+├── .env                # Credentials and config
+├── .env.example        # Template showing required variables
 ├── templates/
 │   └── index.html      # The dashboard UI
 ├── CAMERA_API.md       # Full camera API reference
-└── README.md           # This file
+└── README.md
 ```
 
 ---
@@ -82,9 +82,7 @@ cd ~/birdcam
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env and fill in your camera credentials
-nano .env
+cp .env.example .env # Edit .env and fill in your camera credentials
 ```
 
 ### 3. Test manually
