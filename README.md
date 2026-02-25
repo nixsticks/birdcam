@@ -1,9 +1,5 @@
 # Seattle Bird Buddies — Camera Dashboard
 
-A local web dashboard for the Seattle Bird Buddies IP camera. Shows a live snapshot, streaming status, and system info — and makes it easy to reboot the camera in one tap.
-
----
-
 ## Project structure
 
 ```
@@ -16,15 +12,11 @@ birdcam/
 └── README.md           # This file
 ```
 
-`venv/` will also appear after setup — it's machine-specific and not committed.
-
 ---
 
-## How it works
+## Information Sources
 
-Nothing is streamed or pushed from the camera. Everything is polling over HTTP Basic Auth on the local network.
-
-| Feature | Source | How |
+| Feature | Source | Method |
 |---|---|---|
 | Live feed | `/tmpfs/snap.jpg` | Browser reloads the JPEG every 5s with a cache-busting timestamp |
 | LIVE badge + viewer count | `/tmpfs/state.js` | Polled every 15s, parsed with regex |
@@ -104,7 +96,7 @@ Create the service file:
 sudo nano /etc/systemd/system/birdcam.service
 ```
 
-Paste the following, replacing `YOUR_USERNAME` with your server's username:
+Replace `YOUR_USERNAME` with your server's username:
 
 ```ini
 [Unit]
@@ -136,9 +128,9 @@ Check it's running:
 sudo systemctl status birdcam
 ```
 
-The dashboard will now be available at `http://myserver:8080` permanently. Bookmark it on your phone.
+The dashboard will now be available at `http://myserver:8080` permanently.
 
-To see logs if something goes wrong:
+For logs:
 
 ```bash
 journalctl -u birdcam -f
@@ -166,20 +158,12 @@ Endpoints used by this app:
 ## Venv quick reference
 
 ```bash
-# Create (once, inside the project folder)
+# Create
 python3 -m venv venv
 
-# Activate (every time you open a new terminal)
+# Activate
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
-
-# Deactivate when done
-deactivate
-
-# On a new machine — recreate from scratch
-python3 -m venv venv
-source venv/bin/activate
 pip install -r requirements.txt
 ```
