@@ -1,16 +1,23 @@
+import os
 import re
 import time
 import urllib.request
 import urllib.error
 from base64 import b64encode
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, Response
 
 # ── Config ─────────────────────────────────────────────────────
-CAMERA_HOST = "http://192.168.0.132"
-CAMERA_USER = "admin"
-CAMERA_PASS = "lounge-writer-ipod"
-SERVER_PORT = 8080
+# Loads values from .env into environment variables.
+# Has no effect if the variables are already set in the environment,
+# so this works seamlessly in both local and server deployments.
+load_dotenv()
+
+CAMERA_HOST = os.environ["CAMERA_HOST"]
+CAMERA_USER = os.environ["CAMERA_USER"]
+CAMERA_PASS = os.environ["CAMERA_PASS"]
+SERVER_PORT  = int(os.environ.get("SERVER_PORT", 8080))
 
 app = Flask(__name__)
 

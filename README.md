@@ -5,7 +5,9 @@
 ```
 birdcam/
 ├── server.py           # Flask app and camera proxy
-├── requirements.txt    # Python dependencies (just Flask)
+├── requirements.txt    # Python dependencies (Flask + python-dotenv)
+├── .env                # Your credentials and config — never committed
+├── .env.example        # Template showing required variables — committed
 ├── templates/
 │   └── index.html      # The dashboard UI
 ├── CAMERA_API.md       # Full camera API reference
@@ -25,7 +27,7 @@ birdcam/
 | System info | CGI `cmd=getserverinfo` | Polled every 60s |
 | Reboot | CGI `cmd=sysreboot` | POST to `/api/reboot`, then polls snapshot until camera returns |
 
-The Flask server acts as a proxy between the browser and the camera. Camera credentials live in `server.py` server-side — they're never exposed to the browser.
+The Flask server acts as a proxy between the browser and the camera. Camera credentials are loaded from `.env` at startup and never exposed to the browser.
 
 ---
 
@@ -49,6 +51,10 @@ source venv/bin/activate
 
 # Install dependencies (once)
 pip install -r requirements.txt
+
+# Set up your config (once)
+cp .env.example .env
+# Edit .env and fill in your camera credentials
 
 # Run the server
 python3 server.py
@@ -76,6 +82,9 @@ cd ~/birdcam
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
+# Edit .env and fill in your camera credentials
+nano .env
 ```
 
 ### 3. Test manually
@@ -141,6 +150,12 @@ journalctl -u birdcam -f
 ## Camera API
 
 See `CAMERA_API.md` for the full reference including all known endpoints, response formats, and how they were discovered.
+
+To reboot the camera directly from the terminal (sources credentials from `.env`):
+
+```bash
+source .env && curl -u "$CAMERA_USER:$CAMERA_PASS" "$CAMERA_HOST/cgi-bin/hi3510/param.cgi?cmd=sysreboot"
+```
 
 Endpoints used by this app:
 
