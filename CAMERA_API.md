@@ -97,7 +97,7 @@ ffmpeg -i rtsp://admin:PASSWORD@192.168.0.132:554/12 -c copy output.mp4
 
 ### RTMP
 
-The camera also exposes RTMP on port `1935`. The camera currently uses this port to push a live stream to YouTube (see Streaming Status below).
+The camera also exposes RTMP on port `1935`. The camera currently uses this port to push a live stream to YouTube (see RTMP Publishing below).
 
 ### ONVIF
 
@@ -301,6 +301,109 @@ var ft_autocreatedir="1";
 
 ---
 
+## RTMP Publishing
+
+The camera pushes an RTMP stream to a configurable destination (currently YouTube). The publish configuration — including enable state, audio, stream channel, schedule, and RTMP URL — is packed into a single encoded string spread across `url1`–`url7`.
+
+### Reading the Config
+
+**`cmd=getpublishattr`** — Current RTMP publish settings
+
+```js
+var enable="0";
+var audio="1";
+var chn="11";
+var flag="1";
+var url1="+7ffffffffffffffffffffffffffffffffffff";
+var url2="+ffffff11~a.rtmp.youtube.com%2Flive2%2";
+var url3="+F9ud0-wp81-3yed-9zxr-3j29";
+var url4=" ";
+var url5=" ";
+var url6=" ";
+var url7=" ";
+var url8="";
+```
+
+> **Note:** The `enable` field in the CGI response does not reflect the actual streaming state. Use `/tmpfs/state.js` to check whether the camera is currently publishing.
+
+### Config Encoding
+
+The values `url1`–`url7` concatenate (after stripping the leading `+` or space) into a single config string with this layout:
+
+```
+<enable_hex><schedule_42_hex><stream_channel>~<url_encoded_rtmp_url>
+```
+
+| Offset  | Length | Description |
+|---------|--------|-------------|
+| 0       | 1      | Enable/flags byte (hex). Bit 0 = enabled, bit 1 = audio, bit 2 = SD TS capture |
+| 1       | 42     | Streaming schedule — 7 days × 6 hex chars (see below) |
+| 43      | 2+     | Stream channel (`11` = main, `12` = sub), followed by `~` |
+| after ~ | varies | URL-encoded RTMP destination (without `rtmp://` prefix) |
+
+Each `url1`–`url7` field holds up to 37 characters (plus the `+` prefix). Fields beyond the config length are set to `" "` (space).
+
+### Streaming Schedule
+
+The 42-character schedule encodes 7 days (Sunday–Saturday), 6 hex characters per day. Each day's 6 hex chars represent 24 bits — one per hour (MSB = hour 0, LSB = hour 23). A `1` bit means the camera streams during that hour.
+
+| Hex value  | Binary                     | Meaning           |
+|------------|----------------------------|--------------------|
+| `ffffff`   | `111111111111111111111111`  | All 24 hours (24/7) |
+| `01ffc0`   | `000000011111111111000000`  | 7 AM – 6 PM only    |
+| `000000`   | `000000000000000000000000`  | Disabled for the day |
+
+### Writing the Config
+
+**`cmd=setpublishattr`** — Set RTMP publish configuration (POST)
+
+The config string is split into 37-character chunks and sent as `-url1` through `-url7`.
+
+```bash
+# Set streaming schedule to 7 AM – 6 PM daily
+curl -u admin:PASSWORD \
+  --data-urlencode "cmd=setpublishattr" \
+  --data-urlencode "-url1=+701ffc001ffc001ffc001ffc001ffc001ffc0" \
+  --data-urlencode "-url2=+01ffc011~a.rtmp.youtube.com%2Flive2%2" \
+  --data-urlencode "-url3=+F9ud0-wp81-3yed-9zxr-3j29" \
+  --data-urlencode "-url4= " \
+  --data-urlencode "-url5= " \
+  --data-urlencode "-url6= " \
+  --data-urlencode "-url7= " \
+  "http://192.168.0.132/cgi-bin/hi3510/param.cgi"
+```
+
+> **Important:** A reboot is required for schedule changes to take effect. The RTMP URL and stream key are embedded in the config — always preserve them when changing only the schedule.
+
+### Scheduled Recording
+
+**`cmd=getplanrecattr`** — SD card recording schedule
+
+```js
+var planrec_enable="0";    // 0 = disabled
+var planrec_chn="11";      // main stream
+var planrec_time="600";    // file segment length in seconds
+var planrec_type="1";      // 1 = TS format
+```
+
+### Motion Detection Schedule
+
+**`cmd=getscheduleex&-ename=md`** — Motion detection time windows
+
+```js
+var etm="0";
+var week0="PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP";  // Sunday
+var week1="PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP";  // Monday
+// ... week2–week5 ...
+var week6="PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP";  // Saturday
+```
+
+Each day has 48 characters — one per half-hour slot. `P` = active, `N` = inactive. Currently set to all `P` (24/7 detection).
+
+The schedule type is selected via `-ename`: `md` (motion detection), `snap` (snapshot capture).
+
+---
+
 ## Live Streaming Status
 
 The camera maintains a real-time status file at `/tmpfs/state.js`. This is the most useful file for monitoring the live stream health.
@@ -385,6 +488,7 @@ curl -u admin:PASSWORD \
 ```
 
 Known setter commands (corresponding to the getters above):
+- `setpublishattr` — RTMP publish config, schedule, and destination (see RTMP Publishing)
 - `setimageattr` — image/camera settings
 - `setnetattr` — network settings
 - `setntpattr` — NTP settings
@@ -415,6 +519,12 @@ curl -u $AUTH "$CAM/cgi-bin/hi3510/param.cgi?cmd=getserverinfo"
 
 # Network info
 curl -u $AUTH "$CAM/cgi-bin/hi3510/param.cgi?cmd=getnetattr"
+
+# RTMP publish config (schedule, URL, flags)
+curl -u $AUTH "$CAM/cgi-bin/hi3510/param.cgi?cmd=getpublishattr"
+
+# Reboot
+curl -u $AUTH "$CAM/cgi-bin/hi3510/param.cgi?cmd=sysreboot"
 
 # Play main RTSP stream
 ffplay rtsp://admin:PASSWORD@192.168.0.132:554/11
