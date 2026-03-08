@@ -316,7 +316,7 @@ var chn="11";
 var flag="1";
 var url1="+7ffffffffffffffffffffffffffffffffffff";
 var url2="+ffffff11~a.rtmp.youtube.com%2Flive2%2";
-var url3="+F9ud0-wp81-3yed-9zxr-3j29";
+var url3="+xxxxx-xxxx-xxxx-xxxx-xxxx";
 var url4=" ";
 var url5=" ";
 var url6=" ";
@@ -365,7 +365,7 @@ curl -u admin:PASSWORD \
   --data-urlencode "cmd=setpublishattr" \
   --data-urlencode "-url1=+701ffc001ffc001ffc001ffc001ffc001ffc0" \
   --data-urlencode "-url2=+01ffc011~a.rtmp.youtube.com%2Flive2%2" \
-  --data-urlencode "-url3=+F9ud0-wp81-3yed-9zxr-3j29" \
+  --data-urlencode "-url3=+xxxxx-xxxx-xxxx-xxxx-xxxx" \
   --data-urlencode "-url4= " \
   --data-urlencode "-url5= " \
   --data-urlencode "-url6= " \
